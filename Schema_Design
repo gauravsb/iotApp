@@ -1,0 +1,120 @@
+
+A good schema design is the crux of any analytics application.
+Here is a design to support myriad types of analytical workloads.
+
+-----------------------------------------------------------------------------------
+
+CREATE KEYSPACE vendingSpace WITH REPLICATION = {'replication_factor' = 3};
+USE vendingSpace;
+
+-----------------------------------------------------------------------------------
+
+CREATE TABLE vending_machine_history (
+
+vending_machine_id TEXT,
+transaction_type TEXT,
+product_code TEXT,
+consumer_id UUID,
+amount SOME_DATA_TYPE,
+age SOME_DATA_TYPE,
+gender SOME_DATA_TYPE,
+created_at TimeUUID,
+
+PRIMARY KEY (vending_machine_id, created_at)
+) WITH CLUSTERING ORDERY BY (created_at DESC);
+
+Partition Key = vending_machine_id
+Clustering Keys = created_at (sorted in descending order)
+
+
+Queries Supported:
+1. All the history for a particular vending machine with date range
+
+
+-----------------------------------------------------------------------------------
+
+CREATE TABLE vending_machine_count (
+
+vending_machine_id TEXT,
+purchased_at TimeUUID,
+vending_machine_purchases COUNTER,
+
+PRIMARY_KEY (vending_machine_id, purchased_at)
+)
+
+
+UPDATE vending_machine_count SET vending_machine_purchases = vending_machine_purchases + 1 WHERE vending_machine_id='xxx' AND purchased_at='xxx';
+
+-----------------------------------------------------------------------------------
+
+CREATE TABLE consumer_history (
+
+consumer_id TEXT,
+transaction_type TEXT,
+product_code TEXT,
+amount SOME_DATA_TYPE,
+age SOME_DATA_TYPE,
+gender SOME_DATA_TYPE,
+visited_at TimeUUID,
+last_active TimeUUID,
+latitude SOME_DATA_TYPE,
+langitude SOME_DATA_TYPE,
+
+PRIMARY KEY (consumer_id, visited_at)
+) WITH CLUSTERING ORDERY BY (visited_at DESC);
+
+Partition Key = consumer_id
+Clustering Keys = visited_at (sorted in descending order)
+
+Queries Supported:
+1. All the hitory for a particular consumer with date range
+
+-----------------------------------------------------------------------------------
+
+CREATE TABLE product_history (
+
+product_code TEXT,
+transaction_type TEXT,
+consumer_id UUID,
+amount SOME_DATA_TYPE,
+age SOME_DATA_TYPE,
+gender SOME_DATA_TYPE,
+purchased_at TimeUUID,
+
+PRIMARY KEY (product_code, purchased_at)
+) WITH CLUSTERING ORDERY BY (purchased_at DESC);
+
+
+Partition Key = product_code
+Clustering Keys = year, month, day, hour
+
+
+Queries Supported:
+1. All the hitory for a particular consumer with date range
+
+
+-----------------------------------------------------------------------------------
+
+CREATE TABLE product_count (
+
+product_code TEXT,
+purchased_at TimeUUID,
+produce_purchases COUNTER,
+
+PRIMARY_KEY (product_code, purchased_at)
+)
+
+UPDATE product_count SET produce_purchases = produce_purchases + 1 WHERE product_code='xxx' AND purchased_at='xxx';
+
+-----------------------------------------------------------------------------------
+
+
+Design notes:
+1. Clustering column ensures ordering and makes range queries very performant
+2. Atleast a part of the key needs to be involved in query
+3. Data WILL be de-normalized
+4. Since the operators are limited, they will be stored in spark cache
+5. Additional design opotimizations can be done with techniques such as indexing, key cache, etc. as well as data storage optimizations
+6. Cassandra supports linear scalability
+
+
