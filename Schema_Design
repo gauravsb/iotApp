@@ -67,7 +67,7 @@ Partition Key = consumer_id
 Clustering Keys = visited_at (sorted in descending order)
 
 Queries Supported:
-1. All the hitory for a particular consumer with date range
+1. All the history for a particular consumer with date range
 
 -----------------------------------------------------------------------------------
 
@@ -108,11 +108,11 @@ PRIMARY KEY (product_code, purchased_at)
 
 
 Partition Key = product_code
-Clustering Keys = year, month, day, hour
+Clustering Keys = purchased_at
 
 
 Queries Supported:
-1. All the hitory for a particular consumer with date range
+1. All the history for a particular product with date range
 
 
 -----------------------------------------------------------------------------------
