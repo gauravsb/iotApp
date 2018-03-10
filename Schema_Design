@@ -4,7 +4,7 @@ Here is a design to support myriad types of analytical workloads.
 
 -----------------------------------------------------------------------------------
 
-CREATE KEYSPACE vendingSpace WITH REPLICATION = {'replication_factor' = 3};
+CREATE KEYSPACE vendingSpace WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor' = 3};
 USE vendingSpace;
 
 -----------------------------------------------------------------------------------
@@ -71,6 +71,28 @@ Queries Supported:
 
 -----------------------------------------------------------------------------------
 
+NOTE: This will be a wide row. Assumption is that total transaction in a day will be less than 2 billion. 
+If the transaction is more than 2 billion, then we can make the row hourly instead of daily to scale it.
+
+-----------------------------------------------------------------------------------
+
+CREATE TABLE daily_active_consumers (
+
+YYYYMMDD_date TEXT,
+
+// Here columns will be added dynamically.
+// As soon as a transaction is done, we put data in this table with today's date.
+// Column Name = consumer_id
+// Column Value = Any data needed to extract for a consumer
+
+consumer_id TEXT,
+
+PRIMARY KEY (YYYYMMDD_date)
+)
+
+
+-----------------------------------------------------------------------------------
+
 CREATE TABLE product_history (
 
 product_code TEXT,
@@ -104,10 +126,28 @@ produce_purchases COUNTER,
 PRIMARY_KEY (product_code, purchased_at)
 )
 
-UPDATE product_count SET produce_purchases = produce_purchases + 1 WHERE product_code='xxx' AND purchased_at='xxx';
+-----------------------------------------------------------------------------------
+
+NOTE: This will be a wide row. Assumption is that total transaction in a day will be less than 2 billion. 
+If the transaction is more than 2 billion, then we can make the row hourly instead of daily to scale it.
 
 -----------------------------------------------------------------------------------
 
+CREATE TABLE daily_popular_products (
+
+YYYYMMDD_date TEXT,
+
+// Here columns will be added dynamically.
+// As soon as a product is purchased, we put data in this table with today's date.
+// Column Name = COUNTER + PRODUCT_CODE (counter, product_code)
+// Column Value = Any data needed to extract for a consumer
+
+counter_with_product_code TEXT,
+
+PRIMARY KEY (YYYYMMDD_date, counter_with_product_code)
+) WITH CLUSTERING ORDERY BY (counter_with_product_code DESC);
+
+-----------------------------------------------------------------------------------
 
 Design notes:
 1. Clustering column ensures ordering and makes range queries very performant
@@ -116,5 +156,6 @@ Design notes:
 4. Since the operators are limited, they will be stored in spark cache
 5. Additional design opotimizations can be done with techniques such as indexing, key cache, etc. as well as data storage optimizations
 6. Cassandra supports linear scalability
+7. Production column names will be very small, comprising of 3-4 words only.
 
 
