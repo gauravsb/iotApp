@@ -4,7 +4,7 @@ Here is a design to support myriad types of analytical workloads.
 
 -----------------------------------------------------------------------------------
 
-CREATE KEYSPACE vendingSpace WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor' = 3};
+CREATE KEYSPACE vendingSpace WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor' : 3};
 USE vendingSpace;
 
 -----------------------------------------------------------------------------------
@@ -87,7 +87,7 @@ YYYYMMDD_date TEXT,
 
 consumer_id TEXT,
 
-PRIMARY KEY (YYYYMMDD_date)
+PRIMARY KEY (YYYYMMDD_date, consumer_id)
 )
 
 
@@ -121,7 +121,7 @@ CREATE TABLE product_count (
 
 product_code TEXT,
 purchased_at TimeUUID,
-produce_purchases COUNTER,
+producet_purchases COUNTER,
 
 PRIMARY_KEY (product_code, purchased_at)
 )
@@ -145,7 +145,7 @@ YYYYMMDD_date TEXT,
 counter_with_product_code TEXT,
 
 PRIMARY KEY (YYYYMMDD_date, counter_with_product_code)
-) WITH CLUSTERING ORDERY BY (counter_with_product_code DESC);
+) WITH CLUSTERING ORDER BY (counter_with_product_code DESC);
 
 -----------------------------------------------------------------------------------
 

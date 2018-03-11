@@ -1,5 +1,8 @@
 package com.tenten.bigdata.api.service.impl;
 
+import static org.apache.spark.sql.functions.col;
+import static org.apache.spark.sql.functions.sum;
+
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -19,7 +22,6 @@ import com.datastax.driver.core.Session;
 import com.datastax.spark.connector.cql.CassandraConnector;
 import com.tenten.bigdata.api.entity.Product;
 import com.tenten.bigdata.api.service.DataExtractionService;
-import static org.apache.spark.sql.functions.*;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 public class DataExtractionServiceImpl implements DataExtractionService {
 
 	/*
-	 * Get the values from conf file.
+	 * Get the values from a configuration file.
 	 */
 	@Value("${spark.app.name}")
 	private String appName;
@@ -87,6 +89,42 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 	}
 
 	/**
+	 * Get the unique active consumers between given dates.
+	 */
+	@Override
+	public int getActiveConsumers(Date from, Date to) {
+		
+		// use the same spark session throughout
+		SparkSession spark = getSparkSession();
+		
+		// get the daily_active_consumers table details
+		Dataset<Row> dataset = spark.read().format("org.apache.spark.sql.cassandra")
+				.options(new HashMap<String, String>() {
+					private static final long serialVersionUID = -958995515055440072L;
+					{
+						put("keyspace", "vendingSpace");
+						put("table", "daily_active_consumers");
+						put("cluster", "clusterName");
+					}
+				}).load();
+		
+		List<String> rowKeys = getRowKeysFromDates(from, to);
+		
+		// load data in parallel for each day between from and to
+		rowKeys.stream().parallel()
+		.forEach(rowKey -> dataset.union(
+				spark.sql("select count(*) as active_consumer_count from daily_active_consumers where YYYYMMDD_date = "
+						+ rowKey)));
+
+		// add the counts for each day and return
+		return dataset.toDF()
+				.agg(sum("active_consumer_count"))
+				.first()
+				.getInt(0);
+	}
+	
+
+	/**
 	 * Get the cassandra row keys between starting and ending date.
 	 * 
 	 * @param from
@@ -102,24 +140,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 			rowKeyList.add(date.toString());
 		}
 		return rowKeyList;
-	}
-
-	/**
-	 * 
-	 */
-	@Override
-	public int getActiveConsumers(Date from, Date to) {
-
-		// get the daily_active_consumers table details
-
-		// load data in parallel for each day between from and to
-
-		// for each day, get the columns and count them
-
-		// add the counts of each data
-
-		// return the count
-		return 0;
 	}
 
 	private SparkSession getSparkSession() {
@@ -171,7 +191,11 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 					"INSERT INTO daily_popular_products (YYYYMMDD_date, counter_with_product_code) VALUES ('20180310','0001_productB')");
 
 			session.execute(
-					"INSERT INTO daily_popular_consumers (YYYYMMDD_date, counter_with_product_code) VALUES ('20180310','57cc0ddd990428000bc6f6ce')");
+					"INSERT INTO daily_active_consumers (YYYYMMDD_date, consumer_id) VALUES ('20180310','57cc0ddd990428000bc6f6ce')");
+			session.execute(
+					"INSERT INTO daily_active_consumers (YYYYMMDD_date, consumer_id) VALUES ('20180310','58094f04598e4d000c9b1301')");
+			session.execute(
+					"INSERT INTO daily_active_consumers (YYYYMMDD_date, consumer_id) VALUES ('20180310','58789e27b9b21c000c54b362')");
 		}
 
 	}
