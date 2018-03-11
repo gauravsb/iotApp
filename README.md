@@ -12,10 +12,14 @@ cqlsh> USE vendingSpace;
 
 cqlsh:vendingspace> CREATE TABLE daily_popular_products (  YYYYMMDD_date TEXT,  counter_with_product_code TEXT,  PRIMARY KEY (YYYYMMDD_date, counter_with_product_code) ) WITH CLUSTERING ORDER BY (counter_with_product_code DESC);
 
-cqlsh:vendingspace> INSERT INTO daily_popular_products (YYYYMMDD_date, counter_with_product_code) VALUES ('20180310','0001_productA');            
+cqlsh:vendingspace> INSERT INTO daily_popular_products (YYYYMMDD_date, counter_with_product_code) VALUES ('20180310','0001_productA');
+            
 cqlsh:vendingspace> INSERT INTO daily_popular_products (YYYYMMDD_date, counter_with_product_code) VALUES ('20180310','0002_productA');
+
 cqlsh:vendingspace> INSERT INTO daily_popular_products (YYYYMMDD_date, counter_with_product_code) VALUES ('20180310','0003_productA');
+
 cqlsh:vendingspace> INSERT INTO daily_popular_products (YYYYMMDD_date, counter_with_product_code) VALUES ('20180310','0001_productB');
+
 
 ## Note that the values are sorted by the number of times a product was purchased
 
@@ -33,7 +37,9 @@ cqlsh:vendingspace> select * from daily_popular_products;
 cqlsh:vendingspace> CREATE TABLE daily_active_consumers (  YYYYMMDD_date TEXT, consumer_id TEXT,  PRIMARY KEY (YYYYMMDD_date, consumer_id) );
 
 cqlsh:vendingspace> INSERT INTO daily_active_consumers (YYYYMMDD_date, consumer_id) VALUES ('20180310','57cc0ddd990428000bc6f6ce');
+
 cqlsh:vendingspace> INSERT INTO daily_active_consumers (YYYYMMDD_date, consumer_id) VALUES ('20180310','58094f04598e4d000c9b1301');
+
 cqlsh:vendingspace> INSERT INTO daily_active_consumers (YYYYMMDD_date, consumer_id) VALUES ('20180310','58789e27b9b21c000c54b362');
 
 cqlsh:vendingspace> select * from daily_active_consumers;
@@ -45,6 +51,7 @@ cqlsh:vendingspace> select * from daily_active_consumers;
       20180310 | 58789e27b9b21c000c54b362
 
 (3 rows)
+
 
 ## Note that we get active consumers for a particular day just by doing a simple count on a row key 
 
