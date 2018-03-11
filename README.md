@@ -26,10 +26,15 @@ cqlsh:vendingspace> INSERT INTO daily_popular_products (YYYYMMDD_date, counter_w
 cqlsh:vendingspace> select * from daily_popular_products;
 
  yyyymmdd_date | counter_with_product_code
+
 ---------------+---------------------------
+
       20180310 |             0003_productA
+      
       20180310 |             0002_productA
+      
       20180310 |             0001_productB
+      
       20180310 |             0001_productA
 
 (4 rows)
@@ -45,9 +50,13 @@ cqlsh:vendingspace> INSERT INTO daily_active_consumers (YYYYMMDD_date, consumer_
 cqlsh:vendingspace> select * from daily_active_consumers;
 
  yyyymmdd_date | consumer_id
+
 ---------------+--------------------------
+
       20180310 | 57cc0ddd990428000bc6f6ce
+      
       20180310 | 58094f04598e4d000c9b1301
+      
       20180310 | 58789e27b9b21c000c54b362
 
 (3 rows)
