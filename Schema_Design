@@ -1,0 +1,161 @@
+
+A good schema design is the crux of any analytics application.
+Here is a design to support myriad types of analytical workloads.
+
+-----------------------------------------------------------------------------------
+
+CREATE KEYSPACE vendingSpace WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor' : 3};
+USE vendingSpace;
+
+-----------------------------------------------------------------------------------
+
+CREATE TABLE vending_machine_history (
+
+vending_machine_id TEXT,
+transaction_type TEXT,
+product_code TEXT,
+consumer_id UUID,
+amount SOME_DATA_TYPE,
+age SOME_DATA_TYPE,
+gender SOME_DATA_TYPE,
+created_at TimeUUID,
+
+PRIMARY KEY (vending_machine_id, created_at)
+) WITH CLUSTERING ORDERY BY (created_at DESC);
+
+Partition Key = vending_machine_id
+Clustering Keys = created_at (sorted in descending order)
+
+
+Queries Supported:
+1. All the history for a particular vending machine with date range
+
+
+-----------------------------------------------------------------------------------
+
+CREATE TABLE vending_machine_count (
+
+vending_machine_id TEXT,
+purchased_at TimeUUID,
+vending_machine_purchases COUNTER,
+
+PRIMARY_KEY (vending_machine_id, purchased_at)
+)
+
+
+UPDATE vending_machine_count SET vending_machine_purchases = vending_machine_purchases + 1 WHERE vending_machine_id='xxx' AND purchased_at='xxx';
+
+-----------------------------------------------------------------------------------
+
+CREATE TABLE consumer_history (
+
+consumer_id TEXT,
+transaction_type TEXT,
+product_code TEXT,
+amount SOME_DATA_TYPE,
+age SOME_DATA_TYPE,
+gender SOME_DATA_TYPE,
+visited_at TimeUUID,
+last_active TimeUUID,
+latitude SOME_DATA_TYPE,
+langitude SOME_DATA_TYPE,
+
+PRIMARY KEY (consumer_id, visited_at)
+) WITH CLUSTERING ORDERY BY (visited_at DESC);
+
+Partition Key = consumer_id
+Clustering Keys = visited_at (sorted in descending order)
+
+Queries Supported:
+1. All the history for a particular consumer with date range
+
+-----------------------------------------------------------------------------------
+
+NOTE: This will be a wide row. Assumption is that total transaction in a day will be less than 2 billion. 
+If the transaction is more than 2 billion, then we can make the row hourly instead of daily to scale it.
+
+-----------------------------------------------------------------------------------
+
+CREATE TABLE daily_active_consumers (
+
+YYYYMMDD_date TEXT,
+
+// Here columns will be added dynamically.
+// As soon as a transaction is done, we put data in this table with today's date.
+// Column Name = consumer_id
+// Column Value = Any data needed to extract for a consumer
+
+consumer_id TEXT,
+
+PRIMARY KEY (YYYYMMDD_date, consumer_id)
+)
+
+
+-----------------------------------------------------------------------------------
+
+CREATE TABLE product_history (
+
+product_code TEXT,
+transaction_type TEXT,
+consumer_id UUID,
+amount SOME_DATA_TYPE,
+age SOME_DATA_TYPE,
+gender SOME_DATA_TYPE,
+purchased_at TimeUUID,
+
+PRIMARY KEY (product_code, purchased_at)
+) WITH CLUSTERING ORDERY BY (purchased_at DESC);
+
+
+Partition Key = product_code
+Clustering Keys = purchased_at
+
+
+Queries Supported:
+1. All the history for a particular product with date range
+
+
+-----------------------------------------------------------------------------------
+
+CREATE TABLE product_count (
+
+product_code TEXT,
+purchased_at TimeUUID,
+producet_purchases COUNTER,
+
+PRIMARY_KEY (product_code, purchased_at)
+)
+
+-----------------------------------------------------------------------------------
+
+NOTE: This will be a wide row. Assumption is that total transaction in a day will be less than 2 billion. 
+If the transaction is more than 2 billion, then we can make the row hourly instead of daily to scale it.
+
+-----------------------------------------------------------------------------------
+
+CREATE TABLE daily_popular_products (
+
+YYYYMMDD_date TEXT,
+
+// Here columns will be added dynamically.
+// As soon as a product is purchased, we put data in this table with today's date.
+// Column Name = COUNTER + PRODUCT_CODE (counter, product_code)
+// Column Value = Any data needed to extract for a consumer
+
+counter_with_product_code TEXT,
+
+PRIMARY KEY (YYYYMMDD_date, counter_with_product_code)
+) WITH CLUSTERING ORDER BY (counter_with_product_code DESC);
+
+-----------------------------------------------------------------------------------
+
+Design notes:
+1. Clustering column ensures ordering and makes range queries very performant
+2. Atleast a part of the key needs to be involved in query
+3. Data WILL be de-normalized
+4. Since the operators are limited, they will be stored in spark cache
+5. Additional design opotimizations can be done with techniques such as indexing, key cache, etc. as well as data storage optimizations
+6. Cassandra supports linear scalability
+7. Production column names will be very small, comprising of 3-4 words only.
+
+
